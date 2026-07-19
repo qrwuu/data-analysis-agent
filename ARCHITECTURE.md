@@ -13,45 +13,80 @@
 
 ```mermaid
 flowchart TB
-    subgraph Browser[Browser Workspace]
-      CHAT[Conversation UI]
-      PREVIEW[Data Preview]
-      SETTINGS[Models and Preferences]
-      ARTIFACTS[Jobs and Artifacts]
+    subgraph experience["用户体验层"]
+        direction LR
+        workbench["AI 分析工作台"]
+        dashboard["可视化仪表盘"]
     end
 
-    subgraph Web[Flask Application]
-      API[JSON API]
-      SSE[SSE Event Stream]
-      AUTH[Local Authentication]
+    subgraph access["应用接入层"]
+        direction LR
+        web["Flask Web 应用"]
+        api["REST API"]
+        sse["SSE 事件流"]
     end
 
-    subgraph Core[Agent Core]
-      ROUTER[Intent / Skill Router]
-      ORCH[Agent Orchestrator]
-      COMMANDS[Slash Commands]
-      JOBS[Background Jobs]
+    subgraph intelligence["智能分析核心"]
+        direction LR
+        agent["Agent 编排"]
+        router["技能与命令路由"]
+        tools["可信工具执行"]
+        jobs["任务与产物管理"]
+        account["账号与偏好"]
+        knowledge["数据知识库"]
     end
 
-    subgraph Tools[Analysis Tools]
-      QUERY[Read-only SQL]
-      ANALYZE[Statistics and ML]
-      CHART[Charts]
-      EXPORT[Excel / Report / PPT / Dashboard]
+    subgraph foundation["数据与运行时"]
+        direction LR
+        duckdb["DuckDB 查询"]
+        workspace["本地工作区"]
+        history["用户历史"]
+        artifacts["分析产物"]
     end
 
-    subgraph Data[Data Layer]
-      SOURCES[Files / SQL / Sheets / HTTP]
-      DUCKDB[DuckDB Workspace]
-      STORE[Sessions / Knowledge / Preferences]
+    subgraph integrations["模型与数据连接"]
+        direction LR
+        files["Excel / CSV"]
+        database["SQL / Sheets / API"]
+        models["兼容模型服务"]
     end
 
-    Browser --> Web
-    Web --> Core
-    Core --> Tools
-    Tools --> Data
-    Core --> LLM[OpenAI-compatible Providers]
-    Jobs --> Artifacts
+    workbench --> web
+    dashboard --> web
+    web --> api
+    api --> agent
+    api --> account
+    api --> knowledge
+    api --> sse
+    agent --> router
+    router --> tools
+    tools --> jobs
+    tools --> duckdb
+    tools --> workspace
+    jobs --> artifacts
+    account --> history
+    knowledge --> history
+    tools -.-> files
+    tools -.-> database
+    agent -.-> models
+
+    classDef ui fill:#EEF2FF,stroke:#6366F1,color:#1E1B4B,stroke-width:1.5px
+    classDef edge fill:#EFF6FF,stroke:#3B82F6,color:#172554,stroke-width:1.5px
+    classDef core fill:#ECFDF5,stroke:#10B981,color:#064E3B,stroke-width:1.5px
+    classDef data fill:#FFF7ED,stroke:#F59E0B,color:#7C2D12,stroke-width:1.5px
+    classDef external fill:#FAF5FF,stroke:#A855F7,color:#581C87,stroke-width:1.5px
+
+    class workbench,dashboard ui
+    class web,api,sse edge
+    class agent,router,tools,jobs,account,knowledge core
+    class duckdb,workspace,history,artifacts data
+    class files,database,models external
+
+    style experience fill:#F8FAFC,stroke:#CBD5E1,color:#334155
+    style access fill:#F8FAFC,stroke:#CBD5E1,color:#334155
+    style intelligence fill:#F8FAFC,stroke:#CBD5E1,color:#334155
+    style foundation fill:#F8FAFC,stroke:#CBD5E1,color:#334155
+    style integrations fill:#F8FAFC,stroke:#CBD5E1,color:#334155
 ```
 
 ## 前端
@@ -135,4 +170,3 @@ pandas 用于表格处理，DuckDB 用于本地查询与工作区缓存，sqlglo
 - SQL 在执行前进行 AST 级只读检查。
 - 工作目录读取屏蔽敏感路径，写入能力需要显式选择权限。
 - API Key 通过环境变量或本地配置读取，不进入前端源代码。
-

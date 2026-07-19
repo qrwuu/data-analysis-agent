@@ -108,12 +108,80 @@ The **Use sample data** action provides an immediate product walkthrough without
 
 ```mermaid
 flowchart TB
-    UI[Flask Templates + JavaScript + Vue Islands] --> API[Flask API / SSE]
-    API --> AGENT[Agent Orchestrator]
-    AGENT --> TOOLS[SQL · Data · Chart · Export Tools]
-    AGENT --> LLM[OpenAI-compatible Providers]
-    TOOLS --> DS[CSV · Excel · SQL · Sheets · HTTP]
-    TOOLS --> STORE[DuckDB · Workspace · Artifacts]
+    subgraph experience["User Experience"]
+        direction LR
+        workbench["AI Analysis Workspace"]
+        dashboard["Interactive Dashboard"]
+    end
+
+    subgraph access["Application Access"]
+        direction LR
+        web["Flask Web App"]
+        api["REST API"]
+        sse["SSE Event Stream"]
+    end
+
+    subgraph intelligence["Intelligence Core"]
+        direction LR
+        agent["Agent Orchestration"]
+        router["Skill and Command Router"]
+        tools["Controlled Tool Runtime"]
+        jobs["Jobs and Artifacts"]
+        account["Accounts and Preferences"]
+        knowledge["Knowledge Base"]
+    end
+
+    subgraph foundation["Data and Runtime"]
+        direction LR
+        duckdb["DuckDB Queries"]
+        workspace["Local Workspace"]
+        history["User History"]
+        artifacts["Analysis Artifacts"]
+    end
+
+    subgraph integrations["Models and Data"]
+        direction LR
+        files["Excel / CSV"]
+        database["SQL / Sheets / API"]
+        models["Compatible Model APIs"]
+    end
+
+    workbench --> web
+    dashboard --> web
+    web --> api
+    api --> agent
+    api --> account
+    api --> knowledge
+    api --> sse
+    agent --> router
+    router --> tools
+    tools --> jobs
+    tools --> duckdb
+    tools --> workspace
+    jobs --> artifacts
+    account --> history
+    knowledge --> history
+    tools -.-> files
+    tools -.-> database
+    agent -.-> models
+
+    classDef ui fill:#EEF2FF,stroke:#6366F1,color:#1E1B4B,stroke-width:1.5px
+    classDef edge fill:#EFF6FF,stroke:#3B82F6,color:#172554,stroke-width:1.5px
+    classDef core fill:#ECFDF5,stroke:#10B981,color:#064E3B,stroke-width:1.5px
+    classDef data fill:#FFF7ED,stroke:#F59E0B,color:#7C2D12,stroke-width:1.5px
+    classDef external fill:#FAF5FF,stroke:#A855F7,color:#581C87,stroke-width:1.5px
+
+    class workbench,dashboard ui
+    class web,api,sse edge
+    class agent,router,tools,jobs,account,knowledge core
+    class duckdb,workspace,history,artifacts data
+    class files,database,models external
+
+    style experience fill:#F8FAFC,stroke:#CBD5E1,color:#334155
+    style access fill:#F8FAFC,stroke:#CBD5E1,color:#334155
+    style intelligence fill:#F8FAFC,stroke:#CBD5E1,color:#334155
+    style foundation fill:#F8FAFC,stroke:#CBD5E1,color:#334155
+    style integrations fill:#F8FAFC,stroke:#CBD5E1,color:#334155
 ```
 
 The frontend uses Flask templates, modular JavaScript, progressive Vue islands, and Vite. The backend combines Flask, Waitress, pandas, DuckDB, SQLAlchemy, sqlglot, background jobs, local authentication, and structured Agent tooling. See [ARCHITECTURE.md](./ARCHITECTURE.md) for details.
@@ -141,9 +209,3 @@ pnpm quality
 Secrets are loaded from local configuration, SQL is guarded by AST-level read-only validation, sensitive workspace paths are blocked, and browser responses use restrictive security headers. When an external model is selected, the context required for the answer is sent to that provider; choose providers according to your data policy.
 
 See [SECURITY.md](./SECURITY.md) for responsible disclosure.
-
-## Attribution and license
-
-This repository is a non-commercial derivative of [Zafer-Liu/Data-Analysis-Agent](https://github.com/Zafer-Liu/Data-Analysis-Agent), with additional product, interaction, workflow, evaluation, and deployment engineering. Original attribution is preserved in [LICENSE](./LICENSE).
-
-Licensed under **CC BY-NC 4.0** for attributed learning, research, and non-commercial use. Commercial use requires written permission from the original copyright holder.

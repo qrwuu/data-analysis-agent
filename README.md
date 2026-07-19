@@ -166,13 +166,80 @@ ANTHROPIC_AUTH_TOKEN=your-key
 
 ```mermaid
 flowchart TB
-    UI[Flask Templates + JavaScript + Vue Islands] --> API[Flask API / SSE]
-    API --> AGENT[Agent Orchestrator]
-    AGENT --> TOOLS[SQL · Data · Chart · Export Tools]
-    AGENT --> LLM[OpenAI-compatible Model Providers]
-    TOOLS --> DS[CSV · Excel · SQL · Sheets · HTTP]
-    TOOLS --> STORE[DuckDB · Local Workspace · Artifacts]
-    API --> AUTH[Local Auth · Preferences · Knowledge Base]
+    subgraph experience["用户体验层"]
+        direction LR
+        workbench["AI 分析工作台"]
+        dashboard["可视化仪表盘"]
+    end
+
+    subgraph access["应用接入层"]
+        direction LR
+        web["Flask Web 应用"]
+        api["REST API"]
+        sse["SSE 事件流"]
+    end
+
+    subgraph intelligence["智能分析核心"]
+        direction LR
+        agent["Agent 编排"]
+        router["技能与命令路由"]
+        tools["可信工具执行"]
+        jobs["任务与产物管理"]
+        account["账号与偏好"]
+        knowledge["数据知识库"]
+    end
+
+    subgraph foundation["数据与运行时"]
+        direction LR
+        duckdb["DuckDB 查询"]
+        workspace["本地工作区"]
+        history["用户历史"]
+        artifacts["分析产物"]
+    end
+
+    subgraph integrations["模型与数据连接"]
+        direction LR
+        files["Excel / CSV"]
+        database["SQL / Sheets / API"]
+        models["兼容模型服务"]
+    end
+
+    workbench --> web
+    dashboard --> web
+    web --> api
+    api --> agent
+    api --> account
+    api --> knowledge
+    api --> sse
+    agent --> router
+    router --> tools
+    tools --> jobs
+    tools --> duckdb
+    tools --> workspace
+    jobs --> artifacts
+    account --> history
+    knowledge --> history
+    tools -.-> files
+    tools -.-> database
+    agent -.-> models
+
+    classDef ui fill:#EEF2FF,stroke:#6366F1,color:#1E1B4B,stroke-width:1.5px
+    classDef edge fill:#EFF6FF,stroke:#3B82F6,color:#172554,stroke-width:1.5px
+    classDef core fill:#ECFDF5,stroke:#10B981,color:#064E3B,stroke-width:1.5px
+    classDef data fill:#FFF7ED,stroke:#F59E0B,color:#7C2D12,stroke-width:1.5px
+    classDef external fill:#FAF5FF,stroke:#A855F7,color:#581C87,stroke-width:1.5px
+
+    class workbench,dashboard ui
+    class web,api,sse edge
+    class agent,router,tools,jobs,account,knowledge core
+    class duckdb,workspace,history,artifacts data
+    class files,database,models external
+
+    style experience fill:#F8FAFC,stroke:#CBD5E1,color:#334155
+    style access fill:#F8FAFC,stroke:#CBD5E1,color:#334155
+    style intelligence fill:#F8FAFC,stroke:#CBD5E1,color:#334155
+    style foundation fill:#F8FAFC,stroke:#CBD5E1,color:#334155
+    style integrations fill:#F8FAFC,stroke:#CBD5E1,color:#334155
 ```
 
 - **前端**：Flask 模板、模块化原生 JavaScript、Vue 渐进式交互岛、Vite 构建。
@@ -232,9 +299,3 @@ pnpm quality
 - 使用外部模型时，完成回答所需的提示词、表结构和相关数据会发送到所选模型服务；请按组织的数据政策配置提供商。
 
 安全报告方式见 [SECURITY.md](./SECURITY.md)。
-
-## 开源归属与许可
-
-本项目基于 [Zafer-Liu/Data-Analysis-Agent](https://github.com/Zafer-Liu/Data-Analysis-Agent) 进行非商业二次开发，并在交互体验、工程结构、数据工作流、评测与部署方面进行了产品化扩展。原作者归属和许可证信息保留在 [LICENSE](./LICENSE) 中。
-
-项目采用 **CC BY-NC 4.0** 许可，仅允许署名后的学习、研究和非商业使用。商业使用前请获得原著作权人的书面授权。
