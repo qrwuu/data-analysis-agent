@@ -1,0 +1,33 @@
+R1:
+  title: 转化承接异常
+  severity: high
+  diagnosis: 销售下降的主要原因可能不在流量，而在商品承接或支付转化环节。
+R2:
+  title: 低质量流量
+  severity: medium
+  diagnosis: 新增流量未有效转化，可能存在流量人群不精准或商品承接不足。
+R3:
+  title: 推广效率恶化
+  severity: high
+  diagnosis: 推广预算增加，但广告产出下降，投放效率恶化。
+R4:
+  title: 高流量低转化商品
+  severity: medium
+  diagnosis: 商品获得较多流量，但成交承接能力偏弱。
+R5:
+  title: 退款风险
+  severity: high
+  diagnosis: 退款正在明显侵蚀实际销售收入。
+R6:
+  title: 商品依赖风险
+  severity: medium
+  diagnosis: 销售结构对单一商品依赖较高，存在集中度风险。
+R7:
+  title: 点击问题
+  severity: medium
+  diagnosis: 商品获得了更多曝光，但主图、标题、价格或人群匹配度可能不足。
+R8:
+  title: 加购到支付流失
+  severity: medium
+  diagnosis: 用户有购买兴趣，但在价格、优惠、库存、运费或支付环节出现流失。
+

@@ -1,0 +1,6 @@
+/* Entry point — load order matters: tokens (vars) → layout (frame) → chat (main content + workspace) → modals (overlays) → kb (specialised modal). */
+@import "parts/tokens.css";
+@import "parts/layout.css?v=preference-memory-1";
+@import "parts/chat.css?v=chart-actions-2";
+@import "parts/modals.css?v=preference-memory-1";
+@import "parts/kb.css";

@@ -1,0 +1,68 @@
+order:
+  paid_gmv:
+    name: 支付GMV
+    formula: 有效支付订单 payment_amount 求和
+    unit: currency
+  paid_orders:
+    name: 支付订单数
+    formula: 有效支付订单 order_id 去重计数
+    unit: count
+  paid_buyers:
+    name: 支付买家数
+    formula: 有效支付订单 buyer_id 去重计数
+    unit: count
+  units_sold:
+    name: 销售件数
+    formula: quantity 求和
+    unit: count
+  average_order_value:
+    name: 客单价
+    formula: 支付GMV / 支付订单数
+    unit: currency
+  refund_amount:
+    name: 退款金额
+    formula: refund_amount 求和
+    unit: currency
+  net_sales:
+    name: 净销售额
+    formula: 支付GMV - 退款金额
+    unit: currency
+  refund_rate:
+    name: 金额退款率
+    formula: 退款金额 / 支付GMV
+    unit: percent
+traffic:
+  ctr:
+    name: 点击率CTR
+    formula: clicks / impressions
+    unit: percent
+  add_to_cart_rate:
+    name: 加购率
+    formula: add_to_cart_users / visitors
+    unit: percent
+  payment_conversion_rate:
+    name: 支付转化率
+    formula: payment_buyers / visitors
+    unit: percent
+advertising:
+  ad_ctr:
+    name: 广告点击率
+    formula: clicks / impressions
+    unit: percent
+  cpc:
+    name: 平均点击成本CPC
+    formula: ad_spend / clicks
+    unit: currency
+  ad_conversion_rate:
+    name: 广告转化率
+    formula: ad_orders / clicks
+    unit: percent
+  roas:
+    name: 广告投产比ROAS
+    formula: ad_revenue / ad_spend
+    unit: ratio
+  ad_net_return_rate:
+    name: 广告净回报率
+    formula: (ad_revenue - ad_spend) / ad_spend
+    unit: percent
+

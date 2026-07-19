@@ -1,0 +1,22 @@
+# Copy to Caddyfile, replace the placeholders, and point the domain to this host.
+# Caddy obtains and renews HTTPS certificates automatically.
+__DOMAIN__ {
+    encode zstd gzip
+
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "no-referrer"
+    }
+
+    # Generate the bcrypt hash with the command in DEPLOYMENT.md.
+    # Keep the plaintext password outside this file.
+    basic_auth {
+        reviewer __CADDY_BASIC_AUTH_HASH__
+    }
+
+    # Immediate flushing preserves streamed Agent responses.
+    reverse_proxy app:5001 {
+        flush_interval -1
+    }
+}

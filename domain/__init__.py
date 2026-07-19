@@ -1,0 +1,2 @@
+"""Deterministic ecommerce domain logic."""
+

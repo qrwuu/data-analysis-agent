@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数探 Agent</title>
+<link rel="icon" href="{{ url_for('static', filename='Images/icon.png', v='brand-8') }}">
+<script src="{{ url_for('static', filename='js/theme_bootstrap.js', v='fe0') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/agent_chat.css', v='preference-memory-1') }}">
+{% if desktop_lifecycle_enabled %}
+<script defer src="{{ url_for('static', filename='js/modules/desktop_lifecycle.js', v='desktop-lease-1') }}"></script>
+{% endif %}
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Sidebar ──────────────────────────────────────────────── -->
+  <aside class="sidebar sidebar-hub" id="app-sidebar">
+    <div class="sb-main">
+      <header class="sb-brand">
+        <img class="sb-brand-icon" src="/static/Images/icon.png?v=brand-8" alt="数探 Agent">
+        <div class="sb-brand-text">
+          <span class="sb-brand-name" data-i18n="app.title">数探 Agent</span>
+          <span class="sb-brand-tagline" data-i18n="app.subtitle">智能数据探索助手</span>
+        </div>
+      </header>
+
+      <div class="sb-runtime-ghost" aria-hidden="true" hidden>
+        <span class="sb-status-dot on"></span>
+        <span class="sb-status-dot sb-status-dot--info on" id="model-dot"></span>
+        <span class="sb-status-dot" id="src-dot"></span>
+        <span id="session-status-text">创建中…</span>
+        <span id="src-name" data-i18n="sidebar.disconnected">未连接</span>
+        <span id="src-hint" data-i18n="sidebar.hint.noconn">请上传文件或连接数据库</span>
+        <div class="sb-autosave-row hidden" id="autosave-status"></div>
+        <select class="native-model-select" id="model-sel-sidebar" aria-label="Sidebar model" hidden>
+          <option value="">internal-model</option>
+        </select>
+      </div>
+
+      <nav class="sb-nav" aria-label="Agent navigation">
+        <button class="sb-nav-item active" data-sidebar-nav="agent" data-action="setSidebarNav:agent">
+          <span class="sb-nav-icon">AI</span><span class="sb-nav-label">智能分析</span>
+        </button>
+        <button class="sb-nav-item" data-sidebar-nav="skills" data-action="openSkillPicker">
+          <span class="sb-nav-icon">T</span><span class="sb-nav-label">分析工具</span>
+        </button>
+        <button class="sb-nav-item" data-sidebar-nav="knowledge" data-action="openKnowledge">
+          <span class="sb-nav-icon">K</span><span class="sb-nav-label">数据知识库</span>
+        </button>
+        <button class="sb-nav-item" data-sidebar-nav="history" data-action="openSidebarDrawer:sessions">
+          <span class="sb-nav-icon">H</span><span class="sb-nav-label">历史分析</span>
+        </button>
+        <button class="sb-nav-item" data-sidebar-nav="help" data-action="openInstruction">
+          <span class="sb-nav-icon">?</span><span class="sb-nav-label">帮助文档</span>
+        </button>
+      </nav>
+      <button class="sr-only-action" id="temp-prompt-entry" data-action="openOverlay:ov-temp-prompt"
+              title="为当前对话临时设定一段补充指令" aria-hidden="true" tabindex="-1"></button>
+
+      <footer class="sb-footer">
+        <div class="sb-footer-actions">
+          <button class="sb-iconbtn sb-footer-settings" data-action="openOverlay:ov-app-settings"
+                  title="设置">⚙ <span>设置</span></button>
+        </div>
+      </footer>
+    </div>
+
+    <div class="sb-drawer collapsed" id="sb-drawer" data-drawer-panel="sessions">
+      <header class="sb-drawer-head">
+        <button class="sb-drawer-collapse" data-action="closeSidebarDrawer" title="收回">‹</button>
+        <div class="sb-drawer-title">
+          <strong id="sb-drawer-title" data-locked-copy="1">历史分析</strong>
+          <span>查看并恢复历史分析记录。</span>
+        </div>
+      </header>
+
+      <div class="sb-drawer-body">
+        <section class="sb-drawer-page active" data-drawer-page="sessions">
+          <div class="sb-actions-row">
+            <button class="sb-btn sb-btn-primary sb-btn-block" id="history-new-chat-btn"
+                    data-action="newChat" type="button">+ 新对话</button>
+          </div>
+          <div class="sb-history">
+            <div class="sb-history-head">
+              <span id="history-saved-title" data-i18n="sidebar.saved_sessions">已保存对话</span>
+              <button class="sb-history-refresh" data-action="loadSavedList"
+                      title="刷新" data-i18n-title="sidebar.refresh">↻</button>
+            </div>
+            <div id="saved-list" class="sb-history-list">
+              <div class="saved-empty" data-i18n="sidebar.loading">加载中…</div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ───────────────────────────────────────────────────── -->
+  <div class="main">
+    <div class="chat-header">
+      <div>
+        <div class="chat-header-title" data-i18n="header.title">💬 对话分析</div>
+        <div class="chat-header-sub" id="hdr-sub" data-i18n="header.subtitle">连接数据源开始分析</div>
+      </div>
+      <div class="header-btns">
+        <button class="hdr-btn" id="btn-new-analysis" type="button"
+                title="新建分析">＋ 新建分析</button>
+        <button class="hdr-btn" id="btn-focus-mode" type="button"
+                data-action="toggleFocusMode" title="隐藏左侧面板，专注对话">⛶ 专注对话</button>
+        <button class="hdr-btn" id="btn-schema" data-action="openSchemaView" data-i18n="header.schema"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" class="icon-inline" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="3" width="14" height="2.5" rx="1" fill="currentColor"/><rect x="1" y="7" width="14" height="2.5" rx="1" fill="currentColor" opacity=".7"/><rect x="1" y="11" width="9" height="2.5" rx="1" fill="currentColor" opacity=".45"/></svg>数据预览</button>
+        <div class="auth-entry" id="auth-entry">
+          <button class="hdr-btn" id="auth-login-btn" type="button" data-action="openAuth:login">登录 / 注册</button>
+          <div class="auth-user hidden" id="auth-user-wrap">
+            <button class="hdr-btn auth-user-btn" type="button" data-action="toggleAuthMenu"><span id="auth-user-name"></span> ▾</button>
+            <div class="auth-user-menu hidden" id="auth-user-menu">
+              <button type="button" data-action="openMyHistory">我的历史分析</button>
+              <button type="button" data-action="openPreferences">偏好记忆</button>
+              <button type="button" data-action="openQuota">使用额度</button>
+              <button type="button" data-action="openAuth:account">账号设置</button>
+              <button type="button" data-action="logoutAuth">退出登录</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="welcome" id="welcome">
+        <img src="/static/Images/icon.png?v=brand-8" alt="数探 Agent" class="welcome-brand-logo">
+        <h2 data-i18n="welcome.title">开始您的数据分析</h2>
+        <p data-i18n-html="welcome.desc">连接数据库或上传 Excel，用自然语言提问，AI 会自动查询、分析并生成图表。<br>
+           直接描述想分析的问题即可。</p>
+        <div class="hint-chips">
+          <div class="hint-chip" data-action="fillHint">各品类的销售额是多少？</div>
+          <div class="hint-chip" data-action="fillHint">近12个月的销售趋势如何？</div>
+          <div class="hint-chip" data-action="fillHint">哪些客户贡献了最多收入？</div>
+          <div class="hint-chip" data-action="fillHint">生成各地区业绩对比柱状图</div>
+          <div class="hint-chip" data-action="fillHint">对销售额做十分位分析</div>
+          <div class="hint-chip" data-action="fillHint">预测哪些客户可能流失</div>
+          <div class="hint-chip" data-action="fillHint">将客户分成 3 类并总结各类特征</div>
+          <div class="hint-chip" data-action="fillHint">查看数据概况和分布</div>
+          <div class="hint-chip" data-action="fillHint">识别数据中的异常值和缺失情况</div>
+          <div class="hint-chip" data-action="fillHint">找出最值得关注的业务变化</div>
+        </div>
+      </div>
+      <div id="chat-vue-root" class="chat-vue-root"></div>
+    </div>
+
+    <!-- Input area -->
+    <div class="input-area">
+      <!-- Skill picker: separate from slash commands by design. -->
+      <div class="skill-picker" id="skill-picker">
+        <div class="skill-picker-head">
+          <strong data-i18n="skills.header">选择技能</strong>
+          <button type="button" class="skill-picker-close" data-action="closeSkillPicker" aria-label="Close">×</button>
+        </div>
+        <input id="skill-picker-search" class="skill-picker-search" type="search"
+               data-i18n-ph="skills.search" placeholder="搜索技能"
+               autocomplete="off">
+        <div class="skill-picker-list" id="skill-picker-list"></div>
+      </div>
+
+      <!-- Slash command popup (above input, absolute) -->
+      <div class="slash-popup" id="slash-popup">
+        <div class="slash-pop-header" data-i18n="slash.header">斜杠命令  ·  输入字母快速筛选</div>
+        <div class="slash-popup-scroll" id="slash-popup-scroll">
+          <!-- items injected by JS -->
+        </div>
+      </div>
+
+      <div class="composer-data-menu" id="composer-data-menu" hidden>
+        <button class="composer-data-menu-item" type="button" data-data-menu-action="upload">
+          <span class="composer-data-menu-icon">📂</span>
+          <span class="composer-data-menu-copy">
+            <strong>上传 Excel / CSV</strong>
+            <small>从本地上传数据文件</small>
+          </span>
+        </button>
+        <button class="composer-data-menu-item" type="button" data-data-menu-action="sql">
+          <span class="composer-data-menu-icon">🗄️</span>
+          <span class="composer-data-menu-copy">
+            <strong>连接 SQL 数据库</strong>
+            <small>连接 MySQL、PostgreSQL 等数据库</small>
+          </span>
+        </button>
+        <button class="composer-data-menu-item" type="button" data-data-menu-action="gsheets">
+          <span class="composer-data-menu-icon">📊</span>
+          <span class="composer-data-menu-copy">
+            <strong>连接 Google Sheets</strong>
+            <small>导入在线表格数据</small>
+          </span>
+        </button>
+        <button class="composer-data-menu-item" type="button" data-data-menu-action="api">
+          <span class="composer-data-menu-icon">🔗</span>
+          <span class="composer-data-menu-copy">
+            <strong>连接自定义 API</strong>
+            <small>接入业务系统数据</small>
+          </span>
+        </button>
+        <button class="composer-data-menu-item" type="button" data-data-menu-action="sample">
+          <span class="composer-data-menu-icon">✨</span>
+          <span class="composer-data-menu-copy">
+            <strong>使用示例数据</strong>
+            <small>快速体验数据分析流程</small>
+          </span>
+        </button>
+      </div>
+
+      <div class="composer-shell">
+        <div id="composer-queue-root"></div>
+
+        <div class="input-card">
+          <div class="input-meta">
+            <div class="cmd-badge" id="cmd-badge" data-action="clearCmd">
+              <span id="cmd-badge-text"></span>
+              <span class="x" data-i18n-title="cmd_badge.clear" title="移除命令">×</span>
+            </div>
+            <div class="cmd-badge skill-badge" id="skill-badge" data-action="clearSkill">
+              <span id="skill-badge-text"></span>
+              <span class="x" data-i18n-title="skill_badge.clear" title="移除技能">×</span>
+            </div>
+          </div>
+
+          <textarea id="msg-input" rows="1"
+            data-i18n-ph="input.placeholder"
+            placeholder="上传数据或连接数据库后，直接输入你的分析问题"></textarea>
+          <div class="prompt-suggestion-ghost" id="prompt-suggestion-ghost" aria-hidden="true"></div>
+
+          <div class="composer-toolbar">
+            <div class="composer-toolbar-main">
+              <button class="composer-icon-tool composer-data-trigger" id="composer-data-trigger" type="button"
+                      title="添加数据" aria-haspopup="menu" aria-expanded="false">＋</button>
+              <button class="composer-tool" type="button" data-action="openSkillPicker">
+                <span aria-hidden="true">🛠</span><span data-i18n="composer.skills">分析工具</span><span class="composer-chev">⌄</span>
+              </button>
+              <select id="model-sel" class="native-model-select" aria-label="Model" hidden>
+                <option value="">internal-model</option>
+              </select>
+            </div>
+
+            <div class="composer-toolbar-actions">
+              <button class="composer-expand-btn" id="composer-expand-btn" type="button"
+                      data-action="toggleComposerExpanded" aria-expanded="false"
+                      data-i18n-title="composer.expand" title="展开输入框">
+                <span class="expand-icon" aria-hidden="true">⤢</span>
+                <span class="collapse-icon" aria-hidden="true">⤡</span>
+              </button>
+
+              <button class="send-btn" id="send-btn" data-action="onSendOrStop"
+                data-i18n-title="send.title" title="发送 (Enter)" aria-label="Send">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 4L12 20 M12 4L6 10 M12 4L18 10" stroke="currentColor"
+                        stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODALS ═══════════════════════════════════════════════════════ -->
+
+<!-- Authentication -->
+<div class="overlay" id="ov-auth">
+  <div class="modal modal--w420">
+    <div class="modal-title" id="auth-modal-title">登录</div>
+    <div class="f-row" id="auth-nickname-row" hidden>
+      <label for="auth-nickname">昵称（可选）</label>
+      <input id="auth-nickname" type="text" maxlength="80" placeholder="例如：小林">
+    </div>
+    <div class="f-row"><label for="auth-email">邮箱</label><input id="auth-email" type="email" autocomplete="email" placeholder="name@example.com"></div>
+    <div class="f-row"><label for="auth-password">密码</label><input id="auth-password" type="password" autocomplete="current-password" placeholder="至少 8 位"></div>
+    <div class="msg-err" id="auth-error"></div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-sm-ghost" type="button" data-action="toggleAuthMode" id="auth-mode-toggle">注册账号</button>
+      <span class="f-spacer"></span>
+      <button class="btn-sm btn-sm-ghost" type="button" data-action="closeOverlay:ov-auth">取消</button>
+      <button class="btn-sm btn-sm-primary" type="button" data-action="submitAuth" id="auth-submit">登录</button>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="ov-auth-gate">
+  <div class="modal modal--w420"><div class="modal-title">保存你的分析记录</div><p class="upload-modal-sub">登录后可保存并查看你的历史分析记录。</p><div class="modal-footer"><button class="btn-sm btn-sm-ghost" type="button" data-action="closeOverlay:ov-auth-gate">继续体验</button><span class="f-spacer"></span><button class="btn-sm btn-sm-ghost" type="button" data-action="openAuth:register">注册</button><button class="btn-sm btn-sm-primary" type="button" data-action="openAuth:login">登录</button></div></div>
+</div>
+<div class="overlay" id="ov-knowledge-gate">
+  <div class="modal modal--w420"><div class="modal-title">保存你的业务知识</div><p class="upload-modal-sub">登录后可保存并管理你的个人数据知识库，持续补充指标定义、业务规则和背景知识。</p><div class="modal-footer"><button class="btn-sm btn-sm-ghost" type="button" data-action="closeOverlay:ov-knowledge-gate">继续体验</button><span class="f-spacer"></span><button class="btn-sm btn-sm-ghost" type="button" data-action="openAuth:register">注册</button><button class="btn-sm btn-sm-primary" type="button" data-action="openAuth:login">登录</button></div></div>
+</div>
+<div class="overlay" id="ov-save-temporary">
+  <div class="modal modal--w420"><div class="modal-title">保存当前临时分析？</div><p class="upload-modal-sub">是否将当前临时分析保存到你的账号？</p><div class="modal-footer"><button class="btn-sm btn-sm-ghost" type="button" data-action="skipTemporarySave">暂不保存</button><button class="btn-sm btn-sm-primary" type="button" data-action="saveTemporaryAnalysis">保存到历史分析</button></div></div>
+</div>
+<div class="overlay" id="ov-account">
+  <div class="modal modal--w420">
+    <div class="modal-title">账号设置</div>
+    <div class="f-row"><label>邮箱</label><input id="account-email" type="email" disabled></div>
+    <div class="f-row"><label>昵称</label><input id="account-nickname" maxlength="80" placeholder="设置昵称"></div>
+    <div class="f-error" id="account-error"></div>
+    <div class="modal-footer"><button class="btn-sm btn-sm-ghost" type="button" data-action="closeOverlay:ov-account">取消</button><span class="f-spacer"></span><button class="btn-sm btn-sm-primary" type="button" data-action="saveAccount">保存</button></div>
+  </div>
+</div>
+<div class="overlay" id="ov-quota">
+  <div class="modal modal--w420 quota-modal">
+    <div class="quota-hero">
+      <div class="quota-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M5 18.5V12m5 6.5V6m5 12.5v-9m4 9V3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </div>
+      <div><div class="quota-eyebrow">今日分析额度</div><div class="quota-summary" id="quota-summary">正在加载…</div></div>
+    </div>
+    <div class="quota-progress-track"><div class="quota-progress-value" id="quota-progress"></div></div>
+    <div class="quota-stat-grid">
+      <div><span>已使用</span><strong id="quota-used">--</strong></div>
+      <div><span>剩余</span><strong id="quota-remaining">--</strong></div>
+      <div><span>每日上限</span><strong id="quota-limit">--</strong></div>
+    </div>
+    <p class="quota-note" id="quota-note">额度按自然日重置。</p>
+    <div class="modal-footer"><button class="btn-sm btn-sm-ghost" type="button" data-action="closeOverlay:ov-quota">关闭</button></div>
+  </div>
+</div>
+<div class="overlay" id="ov-preferences">
+  <div class="modal modal--w420 preference-modal">
+    <div class="modal-title">偏好记忆</div>
+    <p class="upload-modal-sub">记录你的常用分析口径与展示习惯。新对话会在相关时自动参考，当前问题始终优先。</p>
+    <div class="preference-list" id="preference-list"></div>
+    <div class="f-row preference-add-row">
+      <label for="preference-input">新增偏好</label>
+      <textarea id="preference-input" maxlength="300" placeholder="例如：默认使用 GMV 口径；图表优先用柱状图"></textarea>
+    </div>
+    <div class="f-error" id="preference-error"></div>
+    <div class="modal-footer"><button class="btn-sm btn-sm-ghost" type="button" data-action="closeOverlay:ov-preferences">关闭</button><span class="f-spacer"></span><button class="btn-sm btn-sm-primary" type="button" data-action="savePreference">保存偏好</button></div>
+  </div>
+</div>
+
+<!-- Excel upload -->
+<div class="overlay" id="ov-excel">
+  <div class="modal">
+    <div class="modal-title">上传数据文件</div>
+    <p class="upload-modal-sub">
+      支持 Excel / CSV。本次最多上传 5 个文件；Agent 会读取所有文件的字段，用于跨文件关联与对比分析。
+    </p>
+    <div class="upload-modal-body">
+      <input type="file" id="xl-file" class="sr-only-file-input" accept=".xlsx,.xls,.csv" multiple hidden
+             tabindex="-1" aria-hidden="true">
+      <button class="upload-dropzone" id="xl-dropzone" type="button" data-action="chooseXlFile"
+              aria-describedby="xl-upload-help">
+        <span class="upload-dropzone-icon" aria-hidden="true">📊</span>
+        <span class="upload-dropzone-title">拖拽文件到这里，或点击选择文件</span>
+        <span class="upload-dropzone-sub" id="xl-upload-help">支持 .xlsx / .xls / .csv，本次最多 5 个，建议每个文件不超过 20MB</span>
+      </button>
+      <div class="upload-file-card hidden" id="xl-file-card">
+        <div class="upload-file-card-main">
+          <div class="upload-file-card-label">已选择文件 <span id="xl-file-count"></span></div>
+          <div class="upload-file-list" id="xl-file-list"></div>
+          <div class="upload-file-card-size" id="xl-file-size"></div>
+        </div>
+        <button class="btn-sm btn-sm-ghost upload-file-remove" type="button" data-action="removeXlFile">清空</button>
+      </div>
+    </div>
+    <div class="upload-progress hidden" id="xl-progress">
+      <div class="upload-progress-bar" id="xl-progress-bar"></div>
+      <div class="upload-progress-label" id="xl-progress-label" data-i18n="btn.uploading">上传中…</div>
+    </div>
+    <div class="ds-loading hidden" id="xl-parsing">
+      <div class="ds-spinner"></div>
+      <span data-i18n="ds.parsing">正在解析数据，请稍候…</span>
+    </div>
+    <pre class="schema-box hidden" id="xl-schema"></pre>
+    <div class="msg-err" id="xl-err"></div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-sm-ghost"   id="xl-cancel-btn" data-action="closeXlUpload" data-i18n="modal.cancel">取消</button>
+      <button class="btn-sm btn-sm-primary" id="xl-btn"        data-action="uploadXl" disabled>开始分析</button>
+    </div>
+  </div>
+</div>
+
+<!-- DB connect -->
+<div class="overlay" id="ov-db">
+  <div class="modal">
+    <div class="modal-title" data-i18n="modal.db.title">🗄️ 连接 SQL 数据库</div>
+    <div class="msg-ok hidden" id="db-status"></div>
+    <div class="f-row">
+      <label data-i18n="modal.db.name_label">显示名称（可选）</label>
+      <input type="text" id="db-name" data-i18n-ph="modal.db.name_ph" placeholder="例如：生产数据库">
+    </div>
+    <div class="f-row">
+      <label>
+        <span data-i18n="modal.db.conn_label">连接字符串</span>
+        <span class="required-mark"> *</span>
+      </label>
+      <textarea id="db-conn" placeholder="示例：&#10;mysql+pymysql://user:pass@host:3306/dbname&#10;postgresql://user:pass@host:5432/dbname&#10;sqlite:///./data.db"></textarea>
+      <div class="f-hint" data-i18n="modal.db.hint">支持 MySQL、PostgreSQL、SQLite、SQL Server 等 SQLAlchemy 数据库</div>
+    </div>
+    <div class="ds-loading hidden" id="db-loading">
+      <div class="ds-spinner"></div>
+      <span data-i18n="ds.connecting">正在连接并解析数据…</span>
+    </div>
+    <pre class="schema-box hidden" id="db-schema"></pre>
+    <div class="msg-err" id="db-err"></div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-sm-ghost"   id="db-cancel-btn" data-action="closeOverlay:ov-db" data-i18n="modal.cancel">取消</button>
+      <button class="btn-sm btn-sm-primary" id="db-btn"        data-action="connectDB"           data-i18n="modal.connect">连接</button>
+    </div>
+  </div>
+</div>
+
+<!-- Google Sheets connect -->
+<div class="overlay" id="ov-gsheets">
+  <div class="modal">
+    <div class="modal-title" data-i18n="modal.gsheets.title">📊 连接 Google Sheets</div>
+    <div class="msg-ok hidden" id="gsheets-status"></div>
+    <div class="f-row">
+      <label data-i18n="modal.gsheets.name_label">显示名称（可选）</label>
+      <input type="text" id="gsheets-name" data-i18n-ph="modal.gsheets.name_ph" placeholder="例如：销售数据表">
+    </div>
+    <div class="f-row">
+      <label>
+        <span data-i18n="modal.gsheets.sheet_label">电子表格 URL 或 ID</span>
+        <span class="required-mark"> *</span>
+      </label>
+      <input type="text" id="gsheets-sheet" data-i18n-ph="modal.gsheets.sheet_ph" placeholder="https://docs.google.com/spreadsheets/d/... 或 spreadsheet ID">
+    </div>
+    <div class="f-row">
+      <label>
+        <span data-i18n="modal.gsheets.creds_label">服务账号 JSON</span>
+        <span class="required-mark"> *</span>
+      </label>
+      <textarea id="gsheets-creds" rows="6" data-i18n-ph="modal.gsheets.creds_ph" placeholder='粘贴服务账号 JSON 内容，例如：&#10;{"type":"service_account","project_id":"...","private_key":"...","client_email":"..."}'></textarea>
+      <div class="f-hint" data-i18n="modal.gsheets.hint">需要 Google Service Account 凭证，并已将服务账号邮件加为表格协作者</div>
+    </div>
+    <div class="ds-loading hidden" id="gsheets-loading">
+      <div class="ds-spinner"></div>
+      <span data-i18n="ds.connecting">正在连接并解析数据…</span>
+    </div>
+    <pre class="schema-box hidden" id="gsheets-schema"></pre>
+    <div class="msg-err" id="gsheets-err"></div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-sm-ghost"   id="gsheets-cancel-btn" data-action="closeOverlay:ov-gsheets" data-i18n="modal.cancel">取消</button>
+      <button class="btn-sm btn-sm-primary" id="gsheets-btn"        data-action="connectGSheets"           data-i18n="modal.connect">连接</button>
+    </div>
+  </div>
+</div>
+
+<!-- Custom REST API connect -->
+<div class="overlay" id="ov-api">
+  <div class="modal">
+    <div class="modal-title" data-i18n="modal.api.title">🔗 连接自定义 API</div>
+    <div class="msg-ok hidden" id="api-status"></div>
+    <div class="f-row">
+      <label data-i18n="modal.api.name_label">显示名称（可选）</label>
+      <input type="text" id="api-name" data-i18n-ph="modal.api.name_ph" placeholder="例如：产品数据 API">
+    </div>
+    <div class="f-row">
+      <label>
+        <span data-i18n="modal.api.url_label">API URL</span>
+        <span class="required-mark"> *</span>
+      </label>
+      <input type="text" id="api-url" data-i18n-ph="modal.api.url_ph" placeholder="https://api.example.com/data">
+    </div>
+    <div class="f-row">
+      <label data-i18n="modal.api.auth_label">认证方式</label>
+      <select id="api-auth-type">
+        <option value="none"    data-i18n="modal.api.auth_none">无认证</option>
+        <option value="bearer"  data-i18n="modal.api.auth_bearer">Bearer Token</option>
+        <option value="api_key" data-i18n="modal.api.auth_apikey">API Key (X-API-Key)</option>
+      </select>
+    </div>
+    <div class="f-row hidden" id="api-auth-row">
+      <label data-i18n="modal.api.token_label">认证值</label>
+      <input type="password" id="api-auth-value" placeholder="Token / Key">
+    </div>
+    <div class="ds-loading hidden" id="api-loading">
+      <div class="ds-spinner"></div>
+      <span data-i18n="ds.connecting">正在连接并解析数据…</span>
+    </div>
+    <pre class="schema-box hidden" id="api-schema"></pre>
+    <div class="msg-err" id="api-err"></div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-sm-ghost"   id="api-cancel-btn" data-action="closeOverlay:ov-api" data-i18n="modal.cancel">取消</button>
+      <button class="btn-sm btn-sm-primary" id="api-btn"        data-action="connectAPI"           data-i18n="modal.connect">连接</button>
+    </div>
+  </div>
+</div>
+
+<!-- Data preview modal -->
+<div class="overlay" id="ov-schema">
+  <div class="modal preview-modal">
+    <div class="preview-modal-header">
+      <div class="modal-title" id="preview-title" data-i18n="modal.preview.title">数据预览</div>
+      <div class="preview-footer" id="preview-footer"></div>
+    </div>
+    <div class="preview-body">
+      <!-- Left: sheet tabs list -->
+      <div class="preview-sidebar" id="preview-sidebar">
+        <div class="preview-tabs" id="preview-tabs"></div>
+      </div>
+      <!-- Drag handle -->
+      <div class="preview-resize-handle" id="preview-resize-handle"></div>
+      <!-- Right: table content -->
+      <div class="preview-content">
+        <div class="preview-table-wrap" id="preview-table-wrap">
+          <div class="preview-loading" data-i18n="preview.loading">加载中…</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <span class="preview-context-status hidden" id="preview-context-status"></span>
+      <button class="btn-sm btn-sm-primary hidden" id="preview-use-table" disabled>请先选择表</button>
+      <button class="btn-sm btn-sm-ghost" data-action="closeOverlay:ov-schema" data-i18n="modal.close">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div class="overlay" id="ov-settings">
+  <div class="modal">
+    <div class="modal-title" data-i18n="modal.settings.title">⚙ 模型设置</div>
+
+    <!-- Built-in providers -->
+    <div class="settings-sec">
+      <div class="settings-sec-title" data-i18n="modal.settings.builtin">内置模型提供商</div>
+      <div id="builtin-providers"><!-- injected by JS --></div>
+    </div>
+
+    <!-- Custom models -->
+    <div class="settings-sec">
+      <div class="settings-sec-title" data-i18n="modal.settings.custom">自定义模型</div>
+      <div class="custom-list" id="custom-list"><!-- injected by JS --></div>
+
+      <div class="add-custom-toggle" data-action="toggleAddCustom" data-i18n="modal.settings.add_custom">＋ 添加自定义模型</div>
+
+      <div class="add-custom-form" id="add-custom-form">
+        <input type="text"     id="ac-name"   data-i18n-ph="add_custom.name_ph"  placeholder="供应商名称（显示用），例如 DeepSeek">
+        <input type="text"     id="ac-url"    data-i18n-ph="add_custom.url_ph"   placeholder="API Base URL，例如 https://api.deepseek.com">
+        <input type="text"     id="ac-model"  data-i18n-ph="add_custom.model_ph" placeholder="Model ID（传入 API 的模型名），例如 deepseek-chat">
+        <input type="password" id="ac-key"    data-i18n-ph="add_custom.key_ph"   placeholder="API Key">
+        <div class="f-ac-custom-row">
+          <input type="number" id="ac-ctx"    data-i18n-ph="add_custom.ctx_ph"   placeholder="上下文窗口（默认 1000000）" class="f-item-flex">
+          <input type="number" id="ac-output" data-i18n-ph="add_custom.out_ph"   placeholder="最大输出（默认 384000）"   class="f-item-flex">
+        </div>
+        <label class="f-ac-label-row">
+          <input type="checkbox" id="ac-think" data-change="toggleAcBudget">
+          <span data-i18n="add_custom.think">启用思考模式</span>
+        </label>
+        <div id="ac-budget-row" class="hidden f-ac-budget-row">
+          <label class="f-ac-budget-label" data-i18n="add_custom.budget">思考预算（tokens）</label>
+          <input type="number" id="ac-budget" value="8000" min="1000" max="100000" step="1000" class="f-item-flex">
+        </div>
+        <div class="msg-err" id="ac-err"></div>
+        <div class="msg-ok"  id="ac-ok"></div>
+        <div class="f-row-gap7">
+          <button class="btn-sm btn-sm-ghost"   data-action="toggleAddCustom" data-i18n="modal.cancel">取消</button>
+          <button class="btn-sm btn-sm-primary" data-action="addCustomModel"  data-i18n="modal.save_btn">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-sm btn-sm-ghost" data-action="closeOverlay:ov-settings" data-i18n="modal.close">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Save session dialog -->
+<div class="overlay" id="ov-save">
+  <div class="modal modal--w400">
+    <div class="modal-title" data-i18n="modal.save.title">💾 保存对话</div>
+    <div class="f-row">
+      <label data-i18n="modal.save.label">对话名称</label>
+      <input type="text" id="save-name" data-i18n-ph="modal.save.ph"
+        placeholder="留空则自动生成时间戳名称" maxlength="60">
+    </div>
+    <div class="msg-err" id="save-err"></div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-sm-ghost"   data-action="closeOverlay:ov-save" data-i18n="modal.cancel">取消</button>
+      <button class="btn-sm btn-sm-primary" data-action="saveSession"           data-i18n="modal.save_btn">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Save data warehouse dialog -->
+<div class="overlay" id="ov-save-warehouse">
+  <div class="modal modal--w400">
+    <div class="modal-title">💾 保存数据仓库</div>
+    <div class="f-row">
+      <label>数据仓库名称</label>
+      <input type="text" id="warehouse-save-name"
+        placeholder="留空则自动生成时间戳名称" maxlength="60">
+    </div>
+    <div class="msg-err" id="warehouse-save-err"></div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-sm-ghost" data-action="closeOverlay:ov-save-warehouse">取消</button>
+      <button class="btn-sm btn-sm-primary" data-action="saveDataWarehouse">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rename saved session dialog -->
+<div class="overlay" id="ov-rename">
+  <div class="modal session-rename-modal">
+    <div class="modal-title" data-i18n="modal.rename.title">重命名对话</div>
+    <div class="session-rename-hint" data-i18n="modal.rename.hint">
+      仅修改历史列表中的显示名称，不会重新加载数据源。
+    </div>
+    <div class="f-row">
+      <label data-i18n="modal.rename.label">新的对话名称</label>
+      <input type="text" id="rename-name" data-i18n-ph="modal.rename.ph"
+        placeholder="输入新的对话名称" maxlength="80">
+    </div>
+    <div class="msg-err" id="rename-err"></div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-sm-ghost" data-action="closeOverlay:ov-rename" data-i18n="modal.cancel">取消</button>
+      <button class="btn-sm btn-sm-primary" data-action="submitRenameSession" data-i18n="modal.rename.btn">重命名</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete saved session confirmation -->
+<div class="overlay" id="ov-delete-session">
+  <div class="modal session-delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-session-title">
+    <div class="session-delete-head">
+      <div class="session-delete-icon" aria-hidden="true">!</div>
+      <div class="modal-title" id="delete-session-title">删除这条对话？</div>
+    </div>
+    <div class="session-delete-copy" id="delete-session-name"></div>
+    <div class="session-delete-warning">删除后无法恢复，请确认不再需要这条记录。</div>
+    <div class="msg-err" id="delete-session-err"></div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-sm-ghost" data-action="closeOverlay:ov-delete-session">取消</button>
+      <button class="btn-sm session-delete-confirm" id="delete-session-confirm" data-action="confirmDeleteSession">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading saved session overlay -->
+<div class="session-load-mask" id="session-load-mask" hidden>
+  <div class="session-load-panel">
+    <div class="session-load-spinner" aria-hidden="true"></div>
+    <div class="session-load-copy">
+      <div class="session-load-title" data-i18n="session_load.title">正在加载历史对话</div>
+      <div class="session-load-name" id="session-load-name"></div>
+      <div class="session-load-sub" data-i18n="session_load.sub">正在恢复消息、图表和数据源，数据文件较大时可能需要一些时间。</div>
+      <div class="session-load-meta">
+        <span data-i18n="session_load.elapsed_label">已用时</span>
+        <span id="session-load-elapsed">0s</span>
+      </div>
+    </div>
+    <button class="btn-sm btn-sm-ghost session-load-cancel"
+            data-action="cancelLoadSession"
+            data-i18n="session_load.cancel">终止加载</button>
+  </div>
+</div>
+
+<!-- Update modal -->
+<div class="overlay" id="ov-app-settings">
+  <div class="modal app-settings-modal">
+    <div class="modal-title" data-i18n="modal.app_settings.title">⚙ 应用设置</div>
+    <div id="app-settings-quick-controls"></div>
+    <div id="app-settings-root"></div>
+    <div id="theme-toggle" hidden aria-hidden="true"></div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-sm-ghost" data-action="closeOverlay:ov-app-settings" data-i18n="modal.close">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Model test failure modal ══════════════════════════════════════ -->
+<div class="overlay" id="ov-model-test">
+  <div class="modal modal--w520">
+    <div class="modal-title" data-i18n="modal.model_test.fail_title">⚠ 模型连接测试失败</div>
+    <div class="model-test-meta" id="model-test-meta"></div>
+    <pre class="model-test-error" id="model-test-error"></pre>
+    <div class="modal-footer">
+      <button class="btn-sm btn-sm-ghost" data-action="openOverlay:ov-settings"
+              data-i18n="modal.model_test.open_settings">打开模型设置</button>
+      <button class="btn-sm btn-sm-primary" data-action="closeOverlay:ov-model-test"
+              data-i18n="modal.close">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Instruction modal (renders Instruction.md) ════════════════════ -->
+<div class="overlay" id="ov-instruction">
+  <div class="modal instruction-modal">
+    <div class="modal-title" data-i18n="modal.instruction.title">📖 说明文档</div>
+    <div class="instruction-body" id="instruction-body">
+      <div class="instruction-loading" data-i18n="modal.instruction.loading">加载中…</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-sm-ghost" data-action="closeOverlay:ov-instruction" data-i18n="modal.close">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Knowledge Base Modal ══════════════════════════════════════════ -->
+<div class="overlay" id="ov-knowledge">
+  <div class="modal kb-modal">
+    <div class="modal-title">🧠 数据知识库</div>
+
+    <!-- Tab bar -->
+    <div class="kb-tabs" id="kb-tabs">
+      <button class="kb-tab active"     data-action="kbSwitchTab:metrics">📐 指标定义</button>
+      <button class="kb-tab"             data-action="kbSwitchTab:rules">🛡 业务规则</button>
+      <button class="kb-tab"             data-action="kbSwitchTab:notes">📝 背景知识</button>
+      <button class="kb-tab kb-tab-import" data-action="kbSwitchTab:import">⬆ 导入文件</button>
+    </div>
+
+    <!-- ── Tab: metrics ── -->
+    <div class="kb-panel" id="kb-panel-metrics">
+      <div class="kb-toolbar">
+        <span class="kb-count" id="kb-metrics-count">—</span>
+        <div class="f-row-gap6">
+          <button class="btn-sm btn-sm-ghost"   data-action="kbRefresh:metrics"  title="刷新列表">↻ 刷新</button>
+          <button class="btn-sm btn-sm-primary" data-action="kbOpenForm:metrics">＋ 新增指标</button>
+        </div>
+      </div>
+      <div class="kb-list" id="kb-list-metrics">
+        <div class="kb-empty">暂无指标定义</div>
+      </div>
+    </div>
+
+    <!-- ── Tab: rules ── -->
+    <div class="kb-panel hidden" id="kb-panel-rules">
+      <div class="kb-toolbar">
+        <span class="kb-count" id="kb-rules-count">—</span>
+        <div class="f-row-gap6">
+          <button class="btn-sm btn-sm-ghost"   data-action="kbRefresh:rules"  title="刷新列表">↻ 刷新</button>
+          <button class="btn-sm btn-sm-primary" data-action="kbOpenForm:rules">＋ 新增规则</button>
+        </div>
+      </div>
+      <div class="kb-list" id="kb-list-rules">
+        <div class="kb-empty">暂无业务规则</div>
+      </div>
+    </div>
+
+    <!-- ── Tab: notes ── -->
+    <div class="kb-panel hidden" id="kb-panel-notes">
+      <div class="kb-toolbar">
+        <span class="kb-count" id="kb-notes-count">—</span>
+        <div class="f-row-gap6">
+          <button class="btn-sm btn-sm-ghost"   data-action="kbRefresh:notes"  title="刷新列表">↻ 刷新</button>
+          <button class="btn-sm btn-sm-primary" data-action="kbOpenForm:notes">＋ 新增背景知识</button>
+        </div>
+      </div>
+      <div class="kb-list" id="kb-list-notes">
+        <div class="kb-empty">暂无背景知识</div>
+      </div>
+    </div>
+
+    <!-- ── Tab: import ── -->
+    <div class="kb-panel hidden" id="kb-panel-import">
+      <div class="kb-import-zone" id="kb-drop-zone">
+        <div class="kb-import-icon">📄</div>
+        <div class="kb-import-hint">拖拽文件到此处，或点击选择</div>
+        <div class="kb-import-sub">支持 .xlsx / .xls / .docx</div>
+        <input type="file" id="kb-file-input" accept=".xlsx,.xls,.docx" class="hidden">
+        <button class="btn-sm btn-sm-primary f-mt10" data-action="kbPickFile">选择文件</button>
+      </div>
+
+      <!-- Historical uploaded files -->
+      <div id="kb-files-section" class="f-mt14">
+        <div class="f-flex-between f-mb8">
+          <span class="f-section-title">已上传的源文件</span>
+          <span class="f-refresh-link" data-action="kbLoadFiles">↻ 刷新</span>
+        </div>
+        <div id="kb-files-list">
+          <div class="kb-empty kb-loading-text">加载中…</div>
+        </div>
+      </div>
+
+      <!-- Parsing spinner -->
+      <div class="ds-loading hidden" id="kb-parsing">
+        <div class="ds-spinner"></div>
+        <span>正在解析文件，请稍候…</span>
+      </div>
+
+      <!-- Preview cards -->
+      <div id="kb-preview-area" class="hidden">
+        <div class="kb-preview-header">
+          <div>
+            <div class="kb-preview-title" id="kb-preview-title">解析结果预览</div>
+            <div class="kb-preview-sub" id="kb-preview-sub"></div>
+          </div>
+          <div class="f-kb-preview-btns">
+            <button class="btn-sm btn-sm-ghost"   data-action="kbCancelImport">重新选择</button>
+            <button class="btn-sm btn-sm-primary" data-action="kbConfirmImport">✓ 全部入库</button>
+          </div>
+        </div>
+        <div class="kb-preview-list" id="kb-preview-list"></div>
+      </div>
+
+      <div class="msg-err f-kb-import-err" id="kb-import-err"></div>
+      <div class="msg-ok  f-kb-import-ok"  id="kb-import-ok"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-sm btn-sm-ghost" data-action="closeOverlay:ov-knowledge">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Temporary Prompt Modal ════════════════════════════════════════ -->
+<div class="overlay" id="ov-temp-prompt">
+  <div class="modal modal--w680">
+    <div class="modal-title">📝 临时 Prompt</div>
+
+    <p class="tp-intro">
+      为<strong>当前这次对话</strong>临时设定一段补充指令。启用后，它会在本次会话的
+      每一轮对话中自动附加到系统提示词，新建对话即失效。适合放一些只对这次分析有效的
+      偏好或背景（例如：固定输出口径、指定术语、限定分析范围）。
+    </p>
+
+    <div class="f-row">
+      <label>临时指令内容</label>
+      <textarea id="tp-textarea" class="tp-textarea"
+                placeholder="例如：本次所有金额一律以「万元」为单位展示；分析时优先关注华东地区；结论部分控制在 3 句话以内。"
+                rows="8"></textarea>
+      <div class="tp-meta">
+        <span id="tp-count" class="tp-count">0 / 4000</span>
+      </div>
+    </div>
+
+    <div id="tp-status" class="tp-statusbar">
+      <span class="tp-dot tp-dot-off"></span>加载中…
+    </div>
+
+    <div class="modal-footer tp-footer">
+      <button class="btn-sm btn-sm-ghost"   data-action="tpClear" title="清空并停用">清空</button>
+      <div class="f-spacer"></div>
+      <button class="btn-sm btn-sm-ghost"   id="tp-toggle-btn" data-action="tpToggle">启用</button>
+      <button class="btn-sm btn-sm-ghost"   id="tp-refine-btn" data-action="tpRefine"
+              title="先用模型把口语化描述整理成规范指令，再保存">✨ 智能整理后保存</button>
+      <button class="btn-sm btn-sm-primary" id="tp-save-btn"   data-action="tpSaveRaw">保存</button>
+      <button class="btn-sm btn-sm-ghost"   data-action="closeOverlay:ov-temp-prompt">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Workspace (workdir mount) Modal ══════════════════════════════ -->
+<div class="overlay" id="ov-workspace">
+  <div class="modal modal--w560">
+    <div class="modal-title" data-i18n="modal.workspace.title">📁 挂载工作目录</div>
+
+    <!-- Safety notice -->
+    <div class="ws-safety-notice">
+      <div class="ws-safety-icon">⚠️</div>
+      <div class="ws-safety-text">
+        <div class="ws-safety-title" data-i18n="modal.workspace.safety_title">安全提示</div>
+        <div class="ws-safety-desc" data-i18n="modal.workspace.safety_desc">挂载后，Agent 将能读取该目录下的所有文件（.env / .ssh / .git / *.key 等敏感文件会被自动屏蔽）。请勿挂载包含系统文件或敏感配置的目录。</div>
+      </div>
+    </div>
+
+    <!-- Current mount state — Vue island #6 接管：#ws-current-state -->
+    <div id="ws-current-state">
+      <!-- rendered by the lazily mounted Workspace UI island -->
+    </div>
+
+    <!-- Path input -->
+    <div class="f-row">
+      <label>
+        <span data-i18n="modal.workspace.path_label">工作目录路径</span>
+        <span class="required-mark"> *</span>
+      </label>
+      <div class="f-row-gap6">
+        <input type="text" id="ws-path-input" class="f-item-flex"
+               data-i18n-ph="modal.workspace.path_ph"
+               placeholder="例如：C:\Users\xxx\projects\财务分析">
+        <button class="btn-sm btn-sm-ghost" data-action="pickWorkdir" data-i18n="modal.workspace.browse">浏览</button>
+      </div>
+      <div class="f-hint" id="ws-path-hint" data-i18n="modal.workspace.hint">输入项目文件夹的完整绝对路径，Agent 将直接读取目录内文件（无需上传）。与上传并行，可同时使用。</div>
+    </div>
+
+    <div class="f-row">
+      <label for="ws-permission" data-i18n="workspace.permission_label">工作目录权限</label>
+      <select id="ws-permission">
+        <option value="read_only" data-i18n="workspace.permission.read_only">只读</option>
+        <option value="read_write" data-i18n="workspace.permission.read_write">可读和编辑</option>
+      </select>
+      <div class="f-hint" data-i18n="workspace.permission_explain">只读模式禁止 Agent 写入或修改工作目录文件；可读和编辑模式允许使用写入、编辑工具。</div>
+    </div>
+
+    <div class="msg-err" id="ws-err"></div>
+    <div class="msg-ok"  id="ws-ok"></div>
+
+    <div class="modal-footer">
+      <button class="btn-sm btn-sm-ghost"   data-action="closeOverlay:ov-workspace" data-i18n="modal.close">关闭</button>
+      <button class="btn-sm btn-sm-primary" id="ws-mount-btn" data-action="mountWorkspace" data-i18n="modal.workspace.mount_btn">挂载</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Teams panel ───────────────────────────────────────────────── -->
+<div class="overlay" id="ov-teams">
+  <div class="modal teams-modal">
+    <div id="teams-panel-root"></div>
+  </div>
+</div>
+
+<!-- ── Inline edit form (shared, floats over modal) ── -->
+<div class="overlay" id="ov-kb-form">
+  <div class="modal modal--w520">
+    <div class="modal-title" id="kb-form-title">新增指标</div>
+
+    <!-- Vue knowledge island 接管：首次打开时按需挂载并渲染 #kb-form-body -->
+    <div id="kb-form-body">
+    <!-- metrics fields -->
+    <div id="kb-fields-metrics">
+      <div class="f-row">
+        <label>指标名称 <span class="required-mark">*</span></label>
+        <input type="text" id="kbf-name" placeholder="例如：DAU">
+      </div>
+      <div class="f-row">
+        <label>别名（逗号分隔）</label>
+        <input type="text" id="kbf-alias" placeholder="日活, 日活跃用户">
+      </div>
+      <div class="f-row">
+        <label>业务定义</label>
+        <textarea id="kbf-definition" rows="2" placeholder="当日启动游戏一次及以上的独立设备数"></textarea>
+      </div>
+      <div class="f-row">
+        <label>SQL 模板</label>
+        <textarea id="kbf-sql" rows="3" placeholder="SELECT COUNT(DISTINCT device_id) FROM events WHERE date='{date}'"></textarea>
+      </div>
+      <div class="f-row">
+        <label>口径备注</label>
+        <textarea id="kbf-notes" rows="2" placeholder="剔除机器人流量；iOS/Android 分开统计"></textarea>
+      </div>
+    </div>
+
+    <!-- rules fields -->
+    <div id="kb-fields-rules" class="hidden">
+      <div class="f-row">
+        <label>规则 ID <span class="required-mark">*</span></label>
+        <input type="text" id="kbf-rule-id" placeholder="例如：retention_sanity">
+      </div>
+      <div class="f-row">
+        <label>描述</label>
+        <input type="text" id="kbf-rule-desc" placeholder="次日留存不能超过首日 DAU">
+      </div>
+      <div class="f-row">
+        <label>违反条件</label>
+        <textarea id="kbf-rule-cond" rows="2" placeholder="day2_retention > day1_dau"></textarea>
+      </div>
+      <div class="f-row">
+        <label>严重程度</label>
+        <select id="kbf-rule-sev">
+          <option value="warning">warning</option>
+          <option value="error">error</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- notes fields -->
+    <div id="kb-fields-notes" class="hidden">
+      <div class="f-row">
+        <label>主题 <span class="required-mark">*</span></label>
+        <input type="text" id="kbf-topic" placeholder="例如：流失分析">
+      </div>
+      <div class="f-row">
+        <label>内容</label>
+        <textarea id="kbf-content" rows="4" placeholder="分析流失时需检查：版本更新、服务器波动、竞品上线…"></textarea>
+      </div>
+      <div class="f-row">
+        <label>标签（逗号分隔）</label>
+        <input type="text" id="kbf-tags" placeholder="流失, churn, 留存">
+      </div>
+    </div>
+
+    <div class="msg-err" id="kb-form-err"></div>
+    </div><!-- /#kb-form-body -->
+
+    <div class="modal-footer">
+      <button class="btn-sm btn-sm-ghost"   data-action="closeOverlay:ov-kb-form">取消</button>
+      <button class="btn-sm btn-sm-primary" data-action="kbSubmitForm">保存</button>
+    </div>
+  </div>
+</div>
+
+<div id="global-ui-root"></div>
+<div id="job-history-root"></div>
+<div id="checkpoint-root"></div>
+<div class="toast" id="toast"></div>
+
+<script src="{{ url_for('static', filename='js/bootstrap_error_guard.js', v='boot-guard-1') }}"></script>
+
+<!-- ── Vendor libs (markdown + sanitizer) ─────────────────────────── -->
+<script src="{{ url_for('static', filename='vendor/marked.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/purify.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/vue.global.prod.js') }}"></script>
+
+<!-- ── ES module entry; non-critical UI islands load on demand ── -->
+<script type="module" src="{{ url_for('static', filename='dist/chat-app.js', v='fe1-chat-app-4') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/settings_runtime_patch.js', v='sidebar-nav-1') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/ui_refine_patch.js', v='ui-refine-6') }}"></script>
+</body>
+</html>
