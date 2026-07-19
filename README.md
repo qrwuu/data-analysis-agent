@@ -20,7 +20,6 @@
   <img alt="Python 3.10+" src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white">
   <img alt="Flask" src="https://img.shields.io/badge/Flask-Data%20API-111111?logo=flask&logoColor=white">
   <img alt="Vite" src="https://img.shields.io/badge/Vite-Frontend-646CFF?logo=vite&logoColor=white">
-  <img alt="License" src="https://img.shields.io/badge/License-CC%20BY--NC%204.0-2B7A78">
 </p>
 
 ## 这是什么
@@ -63,7 +62,7 @@ flowchart LR
 - **分析工具**：搜索并显式选择分析技能，也可让系统根据自然语言自动匹配。
 - **斜杠命令**：使用 `/data`、`/skills`、`/jobs`、`/knowledge`、`/sessions`、`/compact` 等命令快速操作。
 - **结果交互**：复制 Markdown、下载图表、查看工具执行状态，并基于现有结果继续追问。
-- **应用设置**：配置模型提供商、自定义兼容接口、深浅主题、中英文界面和助手偏好。
+- **应用设置**：切换深浅主题与中英文界面，并管理助手偏好和个人工作习惯。
 - **工作目录**：挂载本地项目目录，选择只读或可编辑权限，让 Agent 在明确边界内读取数据和生成产物。
 - **MCP 与 Teams**：连接外部 MCP 服务，并通过可配置的轻量团队拆解复杂分析任务。
 
@@ -73,7 +72,6 @@ flowchart LR
 
 - Python 3.10+
 - Windows、macOS 或 Linux
-- 至少一个 OpenAI 兼容模型服务，用于 AI 对话分析
 - Node.js 20.19+ 与 pnpm 仅在修改或重新构建前端时需要
 
 ### Windows
@@ -108,27 +106,19 @@ python app.py
 
 打开 <http://localhost:5001/>。健康检查地址为 <http://localhost:5001/api/health>。
 
-## 配置模型
+## 开箱即用的 AI 服务
 
-推荐启动后在「应用设置 → 模型」中配置提供商、Base URL、Model ID 和 API Key。也可以编辑本地 `.env`：
+交付版本由服务端统一提供模型能力。终端用户无需填写接口地址、模型名称或访问密钥，进入工作台即可开始分析。
 
-```dotenv
-OPENAI_API_KEY=your-key
-# 或使用兼容服务
-DEEPSEEK_API_KEY=your-key
-ANTHROPIC_AUTH_TOKEN=your-key
-```
-
-`.env`、本地模型配置、上传文件、运行日志和分析产物均已加入忽略规则，不会被 Git 提交。
+公开仓库不包含生产环境凭据。自行部署时，由管理员在服务端完成模型服务接入；相关配置不会暴露给浏览器或普通用户。部署方式见 [DEPLOYMENT.md](./DEPLOYMENT.md)。
 
 ## 使用方法
 
 1. 点击输入框左侧的「添加数据」，上传文件或连接数据源。
 2. 打开「数据预览」，检查表名、字段和样例数据；多表场景下选择本轮要分析的表。
-3. 在模型设置中选择已配置模型。
-4. 直接描述问题，或从「分析工具」中指定 SQL、图表、回归、聚类、时间序列等方法。
-5. 在回答中核对查询结果、图表和工具执行过程，并继续追问。
-6. 通过产物卡片下载 Excel、报告、PPT 或仪表盘；需要长期保留时保存分析会话。
+3. 直接描述问题，或从「分析工具」中指定 SQL、图表、回归、聚类、时间序列等方法。
+4. 在回答中核对查询结果、图表和工具执行过程，并继续追问。
+5. 通过产物卡片下载 Excel、报告、PPT 或仪表盘；需要长期保留时保存分析会话。
 
 可以从这些问题开始：
 
@@ -201,7 +191,7 @@ flowchart TB
         direction LR
         files["Excel / CSV"]
         database["SQL / Sheets / API"]
-        models["兼容模型服务"]
+        models["托管模型服务"]
     end
 
     workbench --> web
@@ -292,10 +282,10 @@ pnpm quality
 
 ## 数据与安全
 
-- 密钥仅通过本地配置或环境变量读取，不写入前端和仓库。
+- 模型凭据由服务端统一管理，不下发到浏览器，也不写入代码仓库。
 - SQL 查询使用 AST 级只读校验，阻止写入型语句进入分析流程。
 - 工作目录会屏蔽 `.env`、`.git`、`.ssh`、私钥等敏感路径。
 - 页面启用 CSP、同源写保护、内容类型保护和严格的浏览器权限策略。
-- 使用外部模型时，完成回答所需的提示词、表结构和相关数据会发送到所选模型服务；请按组织的数据政策配置提供商。
+- 完成回答所需的提示词、表结构和相关数据会由服务端发送到托管模型服务；企业部署可按组织的数据政策选择接入方式。
 
 安全报告方式见 [SECURITY.md](./SECURITY.md)。

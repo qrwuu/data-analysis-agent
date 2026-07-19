@@ -49,7 +49,7 @@ flowchart LR
 
 ## Quick start
 
-Requirements: Python 3.10+ and an OpenAI-compatible model provider. Node.js is only required when rebuilding the frontend.
+Requirements: Python 3.10+. Node.js is only required when rebuilding the frontend.
 
 ```bash
 git clone https://github.com/uuuuuu11/data-analysis-agent.git
@@ -67,22 +67,19 @@ python app.py
 
 Open <http://localhost:5001/>. The health endpoint is <http://localhost:5001/api/health>.
 
-Configure a provider in **Application Settings → Models**, or add a key to the local `.env` file:
+## Managed AI service
 
-```dotenv
-OPENAI_API_KEY=your-key
-DEEPSEEK_API_KEY=your-key
-ANTHROPIC_AUTH_TOKEN=your-key
-```
+The delivered product connects to its AI service on the server. End users do not enter an endpoint, model name, or API key—they can open the workspace and start analyzing data immediately.
+
+Production credentials are never included in the public repository. For self-hosting, an administrator provisions the model service on the server as described in [DEPLOYMENT.md](./DEPLOYMENT.md); those settings are not exposed to browsers or regular users.
 
 ## How to use it
 
 1. Select **Add data** and upload a file or connect a source.
 2. Open **Data Preview** to inspect schemas, sample rows, and active tables.
-3. Select a configured model.
-4. Ask a question directly or choose an explicit analysis skill.
-5. Validate tool activity, tables, and charts, then continue with follow-up questions.
-6. Download the generated artifact or save the analysis session.
+3. Ask a question directly or choose an explicit analysis skill.
+4. Validate tool activity, tables, and charts, then continue with follow-up questions.
+5. Download the generated artifact or save the analysis session.
 
 Example questions:
 
@@ -143,7 +140,7 @@ flowchart TB
         direction LR
         files["Excel / CSV"]
         database["SQL / Sheets / API"]
-        models["Compatible Model APIs"]
+        models["Managed Model Service"]
     end
 
     workbench --> web
@@ -206,6 +203,6 @@ pnpm quality
 
 ## Security and privacy
 
-Secrets are loaded from local configuration, SQL is guarded by AST-level read-only validation, sensitive workspace paths are blocked, and browser responses use restrictive security headers. When an external model is selected, the context required for the answer is sent to that provider; choose providers according to your data policy.
+Model credentials are managed on the server and never exposed to the browser or committed to the repository. SQL is guarded by AST-level read-only validation, sensitive workspace paths are blocked, and browser responses use restrictive security headers. The server sends the context required for an answer to the managed model service; enterprise deployments can select an integration that matches their data policy.
 
 See [SECURITY.md](./SECURITY.md) for responsible disclosure.

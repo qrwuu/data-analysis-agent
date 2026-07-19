@@ -21,14 +21,14 @@ cp .env.example .env
 cp Caddyfile.example Caddyfile
 ```
 
-编辑 `.env`，至少设置：
+编辑 `.env`，设置会话密钥，并由部署管理员接入一个服务端模型：
 
 ```dotenv
 BAA_AUTH_SECRET=replace-with-a-long-random-value
 OPENAI_API_KEY=your-provider-key
 ```
 
-也可以在应用启动后通过模型设置配置兼容提供商。
+这些配置仅属于部署侧，不会显示给终端用户或下发到浏览器。交付环境配置完成后，用户打开工作台即可直接使用 AI 分析能力。
 
 ## 3. 配置 HTTPS 与访问保护
 

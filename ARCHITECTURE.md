@@ -48,7 +48,7 @@ flowchart TB
         direction LR
         files["Excel / CSV"]
         database["SQL / Sheets / API"]
-        models["兼容模型服务"]
+        models["托管模型服务"]
     end
 
     workbench --> web
@@ -104,7 +104,7 @@ flowchart TB
 
 - 会话创建、保存、恢复与对话流；
 - 文件、SQL、Google Sheets、HTTP API 与工作目录数据源；
-- 模型配置、连接测试与自定义兼容提供商；
+- 托管模型服务状态、路由与连接健康检查；
 - 数据知识库、个人偏好和账号历史；
 - 技能、命令、Hooks、MCP 与 Teams；
 - 后台任务、Checkpoint、图表和产物下载。
@@ -169,4 +169,4 @@ pandas 用于表格处理，DuckDB 用于本地查询与工作区缓存，sqlglo
 - 图表页面采用独立的受限 CSP。
 - SQL 在执行前进行 AST 级只读检查。
 - 工作目录读取屏蔽敏感路径，写入能力需要显式选择权限。
-- API Key 通过环境变量或本地配置读取，不进入前端源代码。
+- 模型凭据仅保存在服务端运行环境，不进入前端、浏览器或代码仓库。
