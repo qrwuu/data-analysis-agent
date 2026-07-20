@@ -46,13 +46,16 @@
 
 ```mermaid
 flowchart LR
-    A[接入数据] --> B[预览字段与样例]
+    A[接入数据] --> B[预览数据]
     B --> C[自然语言提问]
-    C --> D[Agent 选择分析工具]
-    D --> E[SQL / Python / 统计分析]
+    C --> D[Agent 规划]
+    D --> E[执行分析]
     E --> F[表格与图表]
-    F --> G[追问与验证]
-    G --> H[报告 / Excel / PPT / Dashboard]
+    F --> G[追问验证]
+    G --> H[导出交付]
+
+    classDef step fill:#F3F1FF,stroke:#8B5CF6,color:#1F2937,stroke-width:1px
+    class A,B,C,D,E,F,G,H step
 ```
 
 ## 界面能力
@@ -155,81 +158,21 @@ python app.py
 ## 技术架构
 
 ```mermaid
-flowchart TB
-    subgraph experience["用户体验层"]
-        direction LR
-        workbench["AI 分析工作台"]
-        dashboard["可视化仪表盘"]
-    end
+flowchart LR
+    UI[AI 分析工作台] --> WEB[Flask Web / REST / SSE]
+    WEB --> AGENT[Agent 编排]
+    AGENT --> TOOLS[可信分析工具]
+    TOOLS --> DATA[DuckDB / 本地工作区]
 
-    subgraph access["应用接入层"]
-        direction LR
-        web["Flask Web 应用"]
-        api["REST API"]
-        sse["SSE 事件流"]
-    end
+    WEB --> ACCOUNT[账号与偏好]
+    AGENT -.-> MODEL[托管模型服务]
+    TOOLS -.-> SOURCE[Excel / CSV / SQL / Sheets / API]
+    TOOLS --> OUTPUT[任务与分析产物]
 
-    subgraph intelligence["智能分析核心"]
-        direction LR
-        agent["Agent 编排"]
-        router["技能与命令路由"]
-        tools["可信工具执行"]
-        jobs["任务与产物管理"]
-        account["账号与偏好"]
-        knowledge["数据知识库"]
-    end
-
-    subgraph foundation["数据与运行时"]
-        direction LR
-        duckdb["DuckDB 查询"]
-        workspace["本地工作区"]
-        history["用户历史"]
-        artifacts["分析产物"]
-    end
-
-    subgraph integrations["模型与数据连接"]
-        direction LR
-        files["Excel / CSV"]
-        database["SQL / Sheets / API"]
-        models["托管模型服务"]
-    end
-
-    workbench --> web
-    dashboard --> web
-    web --> api
-    api --> agent
-    api --> account
-    api --> knowledge
-    api --> sse
-    agent --> router
-    router --> tools
-    tools --> jobs
-    tools --> duckdb
-    tools --> workspace
-    jobs --> artifacts
-    account --> history
-    knowledge --> history
-    tools -.-> files
-    tools -.-> database
-    agent -.-> models
-
-    classDef ui fill:#EEF2FF,stroke:#6366F1,color:#1E1B4B,stroke-width:1.5px
-    classDef edge fill:#EFF6FF,stroke:#3B82F6,color:#172554,stroke-width:1.5px
-    classDef core fill:#ECFDF5,stroke:#10B981,color:#064E3B,stroke-width:1.5px
-    classDef data fill:#FFF7ED,stroke:#F59E0B,color:#7C2D12,stroke-width:1.5px
-    classDef external fill:#FAF5FF,stroke:#A855F7,color:#581C87,stroke-width:1.5px
-
-    class workbench,dashboard ui
-    class web,api,sse edge
-    class agent,router,tools,jobs,account,knowledge core
-    class duckdb,workspace,history,artifacts data
-    class files,database,models external
-
-    style experience fill:#F8FAFC,stroke:#CBD5E1,color:#334155
-    style access fill:#F8FAFC,stroke:#CBD5E1,color:#334155
-    style intelligence fill:#F8FAFC,stroke:#CBD5E1,color:#334155
-    style foundation fill:#F8FAFC,stroke:#CBD5E1,color:#334155
-    style integrations fill:#F8FAFC,stroke:#CBD5E1,color:#334155
+    classDef primary fill:#F3F1FF,stroke:#8B5CF6,color:#1F2937,stroke-width:1px
+    classDef support fill:#F8FAFC,stroke:#A78BFA,color:#374151,stroke-width:1px
+    class UI,WEB,AGENT,TOOLS,DATA primary
+    class ACCOUNT,MODEL,SOURCE,OUTPUT support
 ```
 
 - **前端**：Flask 模板、模块化原生 JavaScript、Vue 渐进式交互岛、Vite 构建。
