@@ -72,7 +72,7 @@ Open <http://localhost:5001/>. The health endpoint is <http://localhost:5001/api
 
 ## Managed AI service
 
-The delivered product connects to its AI service on the server. End users do not enter an endpoint, model name, or API key—they can open the workspace and start analyzing data immediately.
+This repository does not provide a shared model API or hosted analytics service. The deployer configures a compatible model provider, model name, and API key in the server-side environment before starting the application. Users of that deployed instance do not enter a model endpoint or API key in the browser.
 
 Production credentials are never included in the public repository. For self-hosting, an administrator provisions the model service on the server as described in [DEPLOYMENT.md](./DEPLOYMENT.md); those settings are not exposed to browsers or regular users.
 
