@@ -107,21 +107,73 @@ The **Use sample data** action provides an immediate product walkthrough without
 ## Architecture
 
 ```mermaid
-flowchart LR
-    UI[AI analysis workspace] --> WEB[Flask Web / REST / SSE]
-    WEB --> AGENT[Agent orchestration]
-    AGENT --> TOOLS[Controlled analysis tools]
-    TOOLS --> DATA[DuckDB / local workspace]
+flowchart TB
+    subgraph clientLayer["User entry"]
+        direction LR
+        analyst["Business analyst"]
+        admin["Administrator"]
+    end
 
-    WEB --> ACCOUNT[Accounts and preferences]
-    AGENT -.-> MODEL[Managed model service]
-    TOOLS -.-> SOURCE[Excel / CSV / SQL / Sheets / API]
-    TOOLS --> OUTPUT[Jobs and analysis artifacts]
+    subgraph accessLayer["Web and API layer"]
+        direction LR
+        web["Flask web application"]
+        api["REST API / SSE"]
+    end
 
-    classDef primary fill:#F3F1FF,stroke:#8B5CF6,color:#1F2937,stroke-width:1px
-    classDef support fill:#F8FAFC,stroke:#A78BFA,color:#374151,stroke-width:1px
-    class UI,WEB,AGENT,TOOLS,DATA primary
-    class ACCOUNT,MODEL,SOURCE,OUTPUT support
+    subgraph serviceLayer["Business services"]
+        direction LR
+        conversation["Sessions and context"]
+        dataSource["Data sources and preview"]
+        preference["Accounts, preferences, knowledge"]
+    end
+
+    subgraph agentLayer["Intelligent analysis Agent"]
+        direction LR
+        guardrail["Data scope and SQL read-only checks"]
+        orchestrator["Agent orchestration"]
+        planner["Skill routing and analysis planning"]
+        executor["Controlled tool execution"]
+    end
+
+    subgraph runtimeLayer["Data and runtime"]
+        direction LR
+        model["Managed model service"]
+        duckdb["DuckDB / cross-source queries"]
+        workspace["Local workspace"]
+        jobs["Background jobs and artifacts"]
+    end
+
+    analyst --> web
+    admin --> web
+    web --> api
+    api --> conversation
+    api --> dataSource
+    api --> preference
+    conversation --> guardrail
+    dataSource --> guardrail
+    preference --> orchestrator
+    guardrail --> orchestrator
+    orchestrator --> planner --> executor
+    orchestrator -.-> model
+    executor --> duckdb
+    executor --> workspace
+    executor --> jobs
+
+    classDef client fill:#F3F1FF,stroke:#8B5CF6,color:#1F2937,stroke-width:1px
+    classDef access fill:#EFF6FF,stroke:#60A5FA,color:#1F2937,stroke-width:1px
+    classDef service fill:#FFFBEB,stroke:#FBBF24,color:#1F2937,stroke-width:1px
+    classDef agent fill:#ECFDF5,stroke:#34D399,color:#1F2937,stroke-width:1px
+    classDef runtime fill:#F8FAFC,stroke:#94A3B8,color:#1F2937,stroke-width:1px
+    class analyst,admin client
+    class web,api access
+    class conversation,dataSource,preference service
+    class guardrail,orchestrator,planner,executor agent
+    class model,duckdb,workspace,jobs runtime
+    style clientLayer fill:#FAFAFF,stroke:#C4B5FD,color:#374151
+    style accessLayer fill:#F8FBFF,stroke:#93C5FD,color:#374151
+    style serviceLayer fill:#FFFEF2,stroke:#FDE68A,color:#374151
+    style agentLayer fill:#F6FFFB,stroke:#A7F3D0,color:#374151
+    style runtimeLayer fill:#F8FAFC,stroke:#CBD5E1,color:#374151
 ```
 
 The frontend uses Flask templates, modular JavaScript, progressive Vue islands, and Vite. The backend combines Flask, Waitress, pandas, DuckDB, SQLAlchemy, sqlglot, background jobs, local authentication, and structured Agent tooling. See [ARCHITECTURE.md](./ARCHITECTURE.md) for details.

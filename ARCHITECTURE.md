@@ -12,21 +12,73 @@
 ## 系统分层
 
 ```mermaid
-flowchart LR
-    UI[AI 分析工作台] --> WEB[Flask Web / REST / SSE]
-    WEB --> AGENT[Agent 编排]
-    AGENT --> TOOLS[可信分析工具]
-    TOOLS --> DATA[DuckDB / 本地工作区]
+flowchart TB
+    subgraph clientLayer["用户入口"]
+        direction LR
+        analyst["业务分析用户"]
+        admin["管理员"]
+    end
 
-    WEB --> ACCOUNT[账号与偏好]
-    AGENT -.-> MODEL[托管模型服务]
-    TOOLS -.-> SOURCE[Excel / CSV / SQL / Sheets / API]
-    TOOLS --> OUTPUT[任务与分析产物]
+    subgraph accessLayer["Web 与接口层"]
+        direction LR
+        web["Flask Web 应用"]
+        api["REST API / SSE"]
+    end
 
-    classDef primary fill:#F3F1FF,stroke:#8B5CF6,color:#1F2937,stroke-width:1px
-    classDef support fill:#F8FAFC,stroke:#A78BFA,color:#374151,stroke-width:1px
-    class UI,WEB,AGENT,TOOLS,DATA primary
-    class ACCOUNT,MODEL,SOURCE,OUTPUT support
+    subgraph serviceLayer["业务服务层"]
+        direction LR
+        conversation["会话与上下文"]
+        dataSource["数据源与预览"]
+        preference["账号、偏好与知识库"]
+    end
+
+    subgraph agentLayer["智能分析 Agent 层"]
+        direction LR
+        guardrail["数据范围与 SQL 只读校验"]
+        orchestrator["Agent 编排"]
+        planner["技能路由与分析规划"]
+        executor["可信工具执行"]
+    end
+
+    subgraph runtimeLayer["数据与运行时"]
+        direction LR
+        model["托管模型服务"]
+        duckdb["DuckDB / 跨源查询"]
+        workspace["本地工作区"]
+        jobs["后台任务与分析产物"]
+    end
+
+    analyst --> web
+    admin --> web
+    web --> api
+    api --> conversation
+    api --> dataSource
+    api --> preference
+    conversation --> guardrail
+    dataSource --> guardrail
+    preference --> orchestrator
+    guardrail --> orchestrator
+    orchestrator --> planner --> executor
+    orchestrator -.-> model
+    executor --> duckdb
+    executor --> workspace
+    executor --> jobs
+
+    classDef client fill:#F3F1FF,stroke:#8B5CF6,color:#1F2937,stroke-width:1px
+    classDef access fill:#EFF6FF,stroke:#60A5FA,color:#1F2937,stroke-width:1px
+    classDef service fill:#FFFBEB,stroke:#FBBF24,color:#1F2937,stroke-width:1px
+    classDef agent fill:#ECFDF5,stroke:#34D399,color:#1F2937,stroke-width:1px
+    classDef runtime fill:#F8FAFC,stroke:#94A3B8,color:#1F2937,stroke-width:1px
+    class analyst,admin client
+    class web,api access
+    class conversation,dataSource,preference service
+    class guardrail,orchestrator,planner,executor agent
+    class model,duckdb,workspace,jobs runtime
+    style clientLayer fill:#FAFAFF,stroke:#C4B5FD,color:#374151
+    style accessLayer fill:#F8FBFF,stroke:#93C5FD,color:#374151
+    style serviceLayer fill:#FFFEF2,stroke:#FDE68A,color:#374151
+    style agentLayer fill:#F6FFFB,stroke:#A7F3D0,color:#374151
+    style runtimeLayer fill:#F8FAFC,stroke:#CBD5E1,color:#374151
 ```
 
 ## 前端
