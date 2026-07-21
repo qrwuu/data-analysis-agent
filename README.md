@@ -5,13 +5,15 @@
 </p>
 
 <p align="center">
-  <strong>把 Excel、数据库和业务 API 变成可追问、可验证、可交付的分析结果</strong>
+  <strong>把 Excel、CSV 和已接入的业务数据变成可追问、可验证、可交付的分析结果</strong>
 </p>
 
 <p align="center">
   <a href="./README_EN.md">English</a> ·
   <a href="#快速开始">快速开始</a> ·
-  <a href="./docs/数探-Data-Analysis-Agent-PRD.md">产品 PRD</a> ·
+  <a href="./docs/数探-Data-Analysis-Agent-PRD.md">完整 PRD</a> ·
+  <a href="./docs/数探-Data-Analysis-Agent-PRD-精简版.md">PRD 精简版</a> ·
+  <a href="./docs/product-decisions.md">产品迭代与关键决策</a> ·
   <a href="./DEMO_GUIDE.md">5 分钟体验</a> ·
   <a href="./ARCHITECTURE.md">系统架构</a> ·
   <a href="./DEPLOYMENT.md">部署指南</a>
@@ -25,21 +27,27 @@
 
 ## 这是什么
 
-数探 Agent 是一个面向业务分析的 AI 数据工作台。用户可以接入 Excel / CSV、SQL 数据库、Google Sheets 或 HTTP API，用自然语言提出问题，并在同一界面中完成数据预览、查询、统计分析、图表生成、结论追问和分析产物导出。
+数探 Agent 是一个面向业务分析的 AI 数据工作台。产品以 Excel / CSV 文件分析为首要路径：用户上传数据后，可在同一界面完成预览、自然语言提问、查询、统计分析、图表生成、结论追问和分析产物导出。已具备数据连接条件的用户还可接入 SQL 数据库、Google Sheets 或 HTTP API。
 
 它把一次分析拆成可观察的步骤：数据从哪里来、AI 调用了什么工具、查询得到了什么结果、图表基于哪些字段生成，都能在对话中直接核对。对需要稳定口径的场景，项目还提供确定性指标计算、数据质量检查和规则诊断能力，避免让模型代替程序做数值计算。
 
 ## 产品设计
 
-项目以“数据可确认、过程可观察、结果可交付”为主线设计数据分析体验，覆盖多源数据接入、对话式分析、受控工具执行、个人知识库、历史会话与结果交付。完整的产品目标、用户场景、功能规则、验收标准和评测口径见：[在线阅读 PRD](./docs/数探-Data-Analysis-Agent-PRD.md)。
+项目以“数据可确认、过程可观察、结果可交付”为主线设计数据分析体验，覆盖多源数据接入、对话式分析、受控工具执行、个人知识库、历史会话与结果交付。
+
+产品资料：[完整 PRD](./docs/数探-Data-Analysis-Agent-PRD.md) · [PRD 精简版](./docs/数探-Data-Analysis-Agent-PRD-精简版.md) · [产品迭代与关键决策](./docs/product-decisions.md)
+
+## 产品迭代与关键决策
+
+数探围绕五项取舍建立产品闭环：以文件上传作为首版分析入口、由工具而非模型直接产生数据结果、只确认会改变结果的关键歧义、展示执行摘要而不展示内部推理、用个人知识库复用业务口径。每项决策的用户问题、替代方案、取舍与验证信号见 [产品迭代与关键决策](./docs/product-decisions.md)。
 
 ## 产品亮点
 
 | 能力 | 用户获得什么 |
 | --- | --- |
-| 多源数据接入 | 上传 Excel / CSV，或连接 SQL、Google Sheets、HTTP API；一个会话可管理多个数据源 |
-| 对话式分析 | 用中文或英文直接提问，流式查看推理状态、工具执行、表格、图表与结论 |
-| 可控分析工具 | 22 个内置技能覆盖 SQL、清洗、回归、聚类、时间序列、图表、报告、PPT 和仪表盘 |
+| 文件优先的数据接入 | 上传 Excel / CSV 后查看 Sheet、字段和样例；一个会话可管理多个数据源 |
+| 对话式分析 | 用中文或英文直接提问，流式查看分析状态、工具执行、表格、图表与结论 |
+| 可控分析工具 | 通过 SQL、清洗、统计和图表工具完成查询与分析，数据结论可回溯至执行结果 |
 | 数据上下文可见 | 在数据预览中检查表、字段和样例行，并明确本轮分析使用的数据表 |
 | 可交付结果 | 导出数据表、Excel、分析报告、PPT、图表和可交互仪表盘 |
 | 长任务管理 | 耗时操作进入后台任务队列，可查看进度、取消任务、恢复结果和下载产物 |
@@ -84,7 +92,7 @@ flowchart LR
 ### Windows
 
 ```powershell
-git clone https://github.com/uuuuuu11/data-analysis-agent.git
+git clone https://github.com/qrwuu/data-analysis-agent.git
 cd data-analysis-agent
 
 python -m venv .venv
@@ -99,7 +107,7 @@ python app.py
 ### macOS / Linux
 
 ```bash
-git clone https://github.com/uuuuuu11/data-analysis-agent.git
+git clone https://github.com/qrwuu/data-analysis-agent.git
 cd data-analysis-agent
 
 python3 -m venv .venv
@@ -149,9 +157,9 @@ python app.py
 | HTTP API | 提供返回表格型 JSON 数据的 URL，可配置 Bearer Token 或 `X-API-Key` |
 | 本地工作目录 | 挂载目录并设置只读或可编辑权限，直接使用其中的数据文件 |
 
-## 内置分析能力
+## 扩展分析与交付能力
 
-项目内置 22 个可发现技能：
+在文件分析闭环之外，项目还提供可按需启用的高级分析和交付能力：
 
 - 数据理解与清洗：数据画像、缺失值处理、截尾、缩尾与异常值处理。
 - 查询与可视化：安全 SQL 查询、自动选图和多类型图表生成。

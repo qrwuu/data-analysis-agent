@@ -76,6 +76,8 @@ data/datasource_config.json
 # screenshots referenced by the document are versioned. Other docs stay local.
 docs/*
 !docs/数探-Data-Analysis-Agent-PRD.md
+!docs/数探-Data-Analysis-Agent-PRD-精简版.md
+!docs/product-decisions.md
 !docs/数探-Data-Analysis-Agent-PRD.pdf
 !docs/images/
 docs/images/*
