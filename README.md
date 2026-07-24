@@ -10,7 +10,6 @@
 
 <p align="center">
   <a href="./README_EN.md">English</a> ·
-  <a href="#项目介绍视频">项目介绍视频</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="./docs/数探-Data-Analysis-Agent-PRD.md">完整 PRD</a> ·
   <a href="./docs/数探-Data-Analysis-Agent-PRD-精简版.md">PRD 精简版</a> ·
@@ -26,11 +25,9 @@
   <img alt="Vite" src="https://img.shields.io/badge/Vite-Frontend-646CFF?logo=vite&logoColor=white">
 </p>
 
-## 项目介绍视频
-
-🎬 [在线播放 2 分 30 秒项目介绍视频](https://qrwuu.github.io/data-analysis-agent/project-intro.html)
-
 ## 这是什么
+
+🎬 **[2 分 30 秒看懂数探 Agent](https://qrwuu.github.io/data-analysis-agent/project-intro.html)**
 
 数探 Agent 是一个面向业务分析的 AI 数据工作台。产品以 Excel / CSV 文件分析为首要路径：用户上传数据后，可在同一界面完成预览、自然语言提问、查询、统计分析、图表生成、结论追问和分析产物导出。已具备数据连接条件的用户还可接入 SQL 数据库、Google Sheets 或 HTTP API。
 
