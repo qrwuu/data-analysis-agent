@@ -28,7 +28,7 @@
 
 ## 项目介绍视频
 
-🎬 [观看 2 分 30 秒项目介绍视频](./95a2504eeb8f2877bab51f2af2605bd0.mp4)
+🎬 [在线播放 2 分 30 秒项目介绍视频](https://qrwuu.github.io/data-analysis-agent/project-intro.html)
 
 ## 这是什么
 
