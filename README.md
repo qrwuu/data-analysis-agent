@@ -27,7 +27,7 @@
 
 ## 这是什么
 
-🎬 **[2 分 30 秒看懂数探 Agent](https://qrwuu.github.io/data-analysis-agent/project-intro.html)**
+🎬 **[2 分 30 秒看懂数探 Agent](https://qrwuu.github.io/data-analysis-agent/project-intro.html?v=original-1080p)**
 
 数探 Agent 是一个面向业务分析的 AI 数据工作台。产品以 Excel / CSV 文件分析为首要路径：用户上传数据后，可在同一界面完成预览、自然语言提问、查询、统计分析、图表生成、结论追问和分析产物导出。已具备数据连接条件的用户还可接入 SQL 数据库、Google Sheets 或 HTTP API。
 
